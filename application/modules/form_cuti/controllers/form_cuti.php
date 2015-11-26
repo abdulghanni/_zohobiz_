@@ -25,7 +25,6 @@ class Form_cuti extends MX_Controller {
         $user_id = $this->session->userdata('user_id');
         if (!$this->ion_auth->logged_in())
         {
-            //redirect them to the login page
             redirect('auth/login', 'refresh');
         }
         elseif ($this->ion_auth->is_admin()) 

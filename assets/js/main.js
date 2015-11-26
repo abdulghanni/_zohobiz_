@@ -241,6 +241,46 @@ $(document).ready(function(){
             });
 
 $(document).ready(function(){
+    $('#formadd3').submit(function(response){
+        $.post($('#formadd3').attr('action'), $('#formadd3').serialize(),function(json){
+            if(json.st == 0){
+                $('#MsgBad').html(json.errors).fadeIn();
+            }else{
+                getTable();getModal();
+                $('#addModal').modal('hide');
+                $('#MsgBad').hide();
+                $('#modaldialog').find('#formadd3')[0].reset();
+                //$('#levelmodal').modal('show');
+            }
+        }, 'json');
+        return false;
+    });
+});
+
+/*$(document).ready(function(){
+    $('#addnew_').click(function(e){
+        var txt_title = 'empty';
+        var txt_code = '';
+        var txt_comp_group_id = 0;
+        $.post($('#url_add_').val(), {title : txt_title,code : txt_code, competency_group_id: txt_comp_group_id },function(json){
+            if(json.st == 0){
+                $('#MsgBad').html(json.errors).fadeIn();
+            }else{
+                getTable();
+                getModal();
+                var id_ = json.last_id;
+                $('#last_id').val(id_);
+            }
+        }, 'json');
+        
+        var txt_last_id = $('#last_id').val();
+        $('#editModal'+txt_last_id).modal('show');
+
+        return false;
+    });
+});*/
+
+$(document).ready(function(){
                 $('#formupdate').submit(function(response){
                     $.post($('#formupdate').attr('action'), $('#formupdate').serialize(),function(json){
                         if(json.st == 0){
@@ -675,9 +715,54 @@ $('#search_act_inactive').on("submit",function(response){
         return false;
     });
 
+$('#search_comp_group').on("submit",function(response){
+        $.post($('#search_comp_group').attr('action'), $('#search_comp_group').serialize(),function(json){
+            var url = $.url();
+            var uri = url.segment(2);
+           
+            
+            function getTable2() 
+            {
+                $('#tabel').load(json.base_url+'competency_group/get_table/fn:'+json.title);
+            }
 
+            if(json.st == 0){
+                $('#MsgGood').text('Search Failed').fadeIn();
+            }else{
+                getTable2();
+            }
+        }, 'json');
+        return false;
+    });
+
+$('#search_comp_def').on("submit",function(response){
+        $.post(
+            $('#search_comp_def').attr('action'), 
+            $('#search_comp_def').serialize(),
+            function(json){
+                var url = $.url();
+                var uri = url.segment(2);
+               
+                
+                function getTable2() 
+                {
+                    $('#tabel').load(json.base_url+'competency_def/get_table/fn:'+json.title);
+                }
+
+                if(json.st == 0){
+                    $('#MsgGood').text('Search Failed').fadeIn();
+                }else{
+                    getTable2();
+                }
+            },
+         'json'
+         );
+        return false;
+    });
 
  $('#parent_id').select2();
+ $('#parent_group_id').select2();
+ $('#competency_group_id').select2();
 
  $('#position_id_detail').on("change",function(response){
     var pos_id = $(this).val();

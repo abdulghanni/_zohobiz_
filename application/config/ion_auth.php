@@ -67,6 +67,9 @@ $config['tables']['keterangan_absen']  = 'keterangan_absen';
 $config['tables']['users_training']  = 'users_training';
 $config['tables']['pembiayaan']  = 'pembiayaan';
 $config['tables']['penyelenggara']  = 'penyelenggara';
+$config['tables']['competency_group']  = 'competency_group';
+$config['tables']['competency_def']  = 'competency_def';
+$config['tables']['competency_level']  = 'competency_level';
 
 
 /*
@@ -120,7 +123,7 @@ $config['salt_prefix']    = '$2y$';
  */
 $config['site_title']                 = "web-HRIS";       // Site Title, example.com
 $config['admin_email']                = "andi@komunigrafik.com"; // Admin Email, admin@example.com
-$config['default_group']              = 'members';           // Default group, use name
+$config['default_group']              = 'member';           // Default group, use name
 $config['admin_group']                = 'admin';             // Default administrators group, use name
 $config['superior1_group']            = 'spv';             // Default superior level 1 group, use name
 $config['superior2_group']            = 'kabag';             // Default superior level 2 group, use name

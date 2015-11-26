@@ -20,55 +20,82 @@ class Form_spd_dalam extends MX_Controller {
         $this->load->helper('language');
     }
 
-    function index($ftitle = "fn:",$sort_by = "id", $sort_order = "asc", $offset = 0)
+    function index($ftitle = "fn:",$sort_by = "id", $sort_order = "desc", $offset = 0)
     {
+        $user_id = $this->session->userdata('user_id');
+        if (!$this->ion_auth->logged_in())
+        {
+            redirect('auth/login', 'refresh');
+        }
+        elseif ($this->ion_auth->is_admin()) 
+        {
+            $this->index_admin("fn:","id","desc",0);       
+        }
+        elseif($this->ion_auth->is_superior1())
+        { 
+            $this->index_superior1("fn:","id","desc",0);
+        }
+        elseif($this->ion_auth->is_superior2())
+        {
+            $this->index_superior2("fn:","id","desc",0);
+        }
+        elseif($this->ion_auth->is_hr())
+        {
+            $this->index_hr("fn:","id","desc",0);
+        }
+        else
+        {
+            return show_error('You must be a superior/admin/HR to view this page.');
+        }
+    }
 
+    function index_superior1($ftitle = "fn:",$sort_by = "id", $sort_order = "desc", $offset = 0)
+    {
+        $user_id = $this->session->userdata('user_id');
         if (!$this->ion_auth->logged_in())
         {
             //redirect them to the login page
             redirect('auth/login', 'refresh');
         }
-        elseif (!$this->ion_auth->is_admin()) //remove this elseif if you want to enable this for non-admins
+        elseif ($this->ion_auth->is_superior1())
         {
-            //redirect them to the home page because they must be an administrator to view this
-            //return show_error('You must be an administrator to view this page.');
-            return show_error('You must be an administrator to view this page.');
-        }
-        else
-        {
-            //set the flash data error message if there is one
+            $id = $this->ion_auth->user()->row()->id;
+
+            $q_position_id = $this->form_spd_dalam_model->where('users_employement.user_id',$id)->render_emp()->row();
+
+            $position_id = $q_position_id->position_id;
+
+            $organization_id = $q_position_id->organization_id;
+
             $this->data['message'] = (validation_errors()) ? validation_errors() : $this->session->flashdata('message');
 
-            //set sort order
             $this->data['sort_order'] = $sort_order;
             
-            //set sort by
             $this->data['sort_by'] = $sort_by;
-           
-            //set filter by title
+              
             $this->data['ftitle_param'] = $ftitle; 
             $exp_ftitle = explode(":",$ftitle);
             $ftitle_re = str_replace("_", " ", $exp_ftitle[1]);
             $ftitle_post = (strlen($ftitle_re) > 0) ? array('form_spd_dalam.title'=>$ftitle_re) : array() ;
             
-            //set default limit in var $config['list_limit'] at application/config/ion_auth.php 
             $this->data['limit'] = $limit = (strlen($this->input->post('limit')) > 0) ? $this->input->post('limit') : 10 ;
 
             $this->data['offset'] = 6;
 
-            //list of filterize all form_spd_dalam  
-            $this->data['form_spd_dalam_all'] = $this->form_spd_dalam_model->like($ftitle_post)->where('users_spd_dalam.is_deleted',0)->form_spd_dalam()->result();
-            
-            $this->data['num_rows_all'] = $this->form_spd_dalam_model->like($ftitle_post)->where('users_spd_dalam.is_deleted',0)->form_spd_dalam()->num_rows();
+            $this->data['form_spd_dalam_all'] = $this->form_spd_dalam_model->like($ftitle_post)->where('users_spd_dalam.is_deleted',0)->where('position.parent_position_id',$position_id)->form_spd_dalam()->result();
+                
+            $this->data['num_rows_all'] = $this->form_spd_dalam_model->like($ftitle_post)->where('users_spd_dalam.is_deleted',0)->where('position.parent_position_id',$position_id)->form_spd_dalam()->num_rows();
 
-            //list of filterize limit form_spd_dalam for pagination  
-            $this->data['form_spd_dalam'] = $this->form_spd_dalam_model->like($ftitle_post)->where('users_spd_dalam.is_deleted',0)->limit($limit)->offset($offset)->order_by($sort_by, $sort_order)->form_spd_dalam()->result();
+            $this->data['form_spd_dalam'] = $this->form_spd_dalam_model->like($ftitle_post)->where('users_spd_dalam.is_deleted',0)->where('position.parent_position_id',$position_id)->limit($limit)->offset($offset)->order_by($sort_by, $sort_order)->form_spd_dalam()->result();
 
-            $this->data['_num_rows'] = $this->form_spd_dalam_model->like($ftitle_post)->where('users_spd_dalam.is_deleted',0)->limit($limit)->offset($offset)->order_by($sort_by, $sort_order)->form_spd_dalam()->num_rows();
+            $this->data['_num_rows'] = $this->form_spd_dalam_model->like($ftitle_post)->where('users_spd_dalam.is_deleted',0)->where('position.parent_position_id',$position_id)->limit($limit)->offset($offset)->order_by($sort_by, $sort_order)->form_spd_dalam()->num_rows();
 
-            $this->_render_page('form_spd_dalam/index', $this->data);
+            $this->_render_page('form_spd_dalam/index_superior1', $this->data);
+        }else{
+            return show_error("You must be an superior 1 to view this page.");
         }
     }
+
 
     function submit($id=0)
     {
@@ -161,54 +188,53 @@ class Form_spd_dalam extends MX_Controller {
 
         if (!$this->ion_auth->logged_in())
         {
-            //redirect them to the login page
             redirect('auth/login', 'refresh');
         }
-        elseif (!$this->ion_auth->is_admin()) //remove this elseif if you want to enable this for non-admins
+        elseif($this->ion_auth->is_superior1() || $this->ion_auth->is_superior2() || $this->ion_auth->is_admin())
         {
-            //redirect them to the home page because they must be an administrator to view this
-            //return show_error('You must be an administrator to view this page.');
-            return show_error('You must be an administrator to view this page.');
-        }
-        else
-        {
-            //set the flash data error message if there is one
             $this->data['message'] = (validation_errors()) ? validation_errors() : $this->session->flashdata('message');
 
-            //get task creator name
-            $query_result = $this->form_spd_dalam_model->where('users.id',$user_id)->get_emp_detail()->result();
+            /*$query_result = $this->form_spd_dalam_model->where('users.id',$user_id)->get_emp_detail()->result();
             foreach ($query_result as $qr) {
                 $this->data['task_creator_nm'] = $qr->first_name." ".$qr->last_name;
+            }*/
+            $q_task_creator = $this->form_spd_dalam_model->where('users.id',$user_id)->get_emp_detail();
+            
+            if($q_task_creator->num_rows() > 0){
+                $qr = $q_task_creator->row();
+                $this->data['task_creator_nm'] = $qr->first_name." ".$qr->last_name;
+            }else{
+                $this->data['task_creator_nm'] = "";
             }
 
-            //get user org_id
             $data_result = $this->form_spd_dalam_model->where('users.id',$user_id)->get_org_id()->result();
             foreach ($data_result as $dr) {
                 $org_id = $dr->organization_id;
             }
 
-            //get tast receiver name
             $query_result = $this->form_spd_dalam_model->where('users_employement.organization_id',$org_id)->get_emp_detail()->result();
             foreach ($query_result as $qr) {
                 $this->data['task_receiver_nm'] = $qr->first_name." ".$qr->last_name;
             }
 
-            //get task creator detail
             $this->data['task_creator'] = $this->form_spd_dalam_model->where('users.id',$user_id)->get_emp_detail()->result();
+
             $this->data['tc_num_rows'] = $this->form_spd_dalam_model->where('users.id',$user_id)->get_emp_detail()->num_rows();
 
-            //get user org_id
             $data_result = $this->form_spd_dalam_model->where('users.id',$user_id)->get_org_id()->result();
             foreach ($data_result as $dr) {
                 $org_id = $dr->organization_id;
             }
 
-            // render employee
-            $this->data['employee_list'] = $this->form_spd_dalam_model->where('users_employement.organization_id',$org_id)->render_emp()->result();
+            $this->data['employee_list'] = $this->form_spd_dalam_model->where('organization.parent_organization_id',$org_id)->render_emp()->result();
+            
             $this->data['el_num_rows'] = $this->form_spd_dalam_model->where('users_employement.organization_id',$org_id)->render_emp()->num_rows();
             
-
             $this->_render_page('form_spd_dalam/input', $this->data);
+        }
+        else
+        {
+            return show_error('You must be a superior/admin/HR to view this page.');
         }
     }
 
@@ -236,8 +262,8 @@ class Form_spd_dalam extends MX_Controller {
                 'title'                 => $this->input->post('title'),
                 'destination'           => $this->input->post('destination'),
                 'date_spd'              => date('Y-m-d', strtotime($this->input->post('date_spd'))),
-                'start_time'            => date('Y-m-d', strtotime($this->input->post('spd_start_time'))),
-                'end_time'              => date('Y-m-d', strtotime($this->input->post('spd_end_time'))),
+                'start_time'            => date('H:i:s', strtotime($this->input->post('spd_start_time'))),
+                'end_time'              => date('H:i:s', strtotime($this->input->post('spd_end_time'))),
                 'created_on'            => date('Y-m-d',strtotime('now')),
                 'created_by'            => $this->session->userdata('user_id')
             );
@@ -304,7 +330,7 @@ class Form_spd_dalam extends MX_Controller {
         {
             $this->load->library('template');
 
-                if(in_array($view, array('form_spd_dalam/index')))
+                if(in_array($view, array('form_spd_dalam/index','form_spd_dalam/index_superior1')))
                 {
                     $this->template->set_layout('default');
 

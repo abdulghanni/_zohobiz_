@@ -501,6 +501,21 @@ class Ion_auth
     }
 
     /**
+     * is_member
+     *
+     * @return bool
+     * @author Andi Galuh
+     **/
+    public function is_member($id=false)
+    {
+        $this->ion_auth_model->trigger_events('is_member');
+
+        $default_group = $this->config->item('default_group', 'ion_auth');
+
+        return $this->in_group($default_group, $id);
+    }
+
+    /**
      * in_group
      *
      * @param mixed group(s) to check

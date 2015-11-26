@@ -46,6 +46,7 @@
                                   $btn_sub = "Submit";
                                   $btn_rep = "Report";
                                 }
+                                $q_ = $this->form_spd_dalam_model->where('users.id',$spd->created_by)->render_emp()->row();
                                 
                                ?>
                                 <tr>
@@ -53,7 +54,7 @@
                                     <a href="<?php echo base_url() ?>form_spd_dalam/submit/<?php echo $spd->id ?>"><h4><?php echo $spd->title ?></h4>
                                       <div class="small-text-custom">
                                         <span>Penerima tugas : </span><?php echo $spd->first_name.' '.$spd->last_name ?><br/>
-                                        <span>Pemberi tugas : </span><?php echo $spd->first_name.' '.$spd->last_name ?><br/>
+                                        <span>Pemberi tugas : </span><?php echo $q_->first_name.' '.$q_->last_name ?><br/>
                                         <span>Tanggal : </span><?php echo date('d F Y',strtotime($spd->date_spd)) .', '. date('H:i',strtotime($spd->start_time)) .' - '. date('H:i',strtotime($spd->end_time)) ?> WIB<br/>
                                         <span>Tempat : </span><?php echo $spd->destination ?>
                                       </div>

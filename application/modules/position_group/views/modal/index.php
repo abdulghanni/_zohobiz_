@@ -1,6 +1,6 @@
 <!-- Add Position Group -->
 <?php echo form_open('position_group/add/', array('id'=>'formadd2'))?> 
-<div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+<div class="modal fade" id="addModal"  role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
   <div class="modal-dialog" id="modaldialog">
     <div class="modal-content">
       <div class="modal-header">
@@ -78,7 +78,7 @@
 <?php foreach ($position_group as $user):?>
 <!--Edit Modal-->
         <?php echo form_open('position_group/update/'.$user->id, array('id'=>'formupdate'.$user->id))?>
-        <div class="modal fade" id="editModal<?php echo $user->id?>" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal fade" id="editModal<?php echo $user->id?>" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -120,11 +120,11 @@
                                 <?php echo lang('parent_position_group', 'parent_position_group');?>
                             </div>
                             <div class="col-md-9">
-                                <select name="parent_position_group_id" class="select2" id="parent_group_id" style="width:100%">
+                                <select name="parent_position_group_id" class="select2" id="parent_group_id<?php echo $user->id?>" style="width:100%">
                                     <?php
-                                        echo '<option value="0">Top Level</option>';
+                                        echo '<option value="0">-- Select --</option>';
                                         foreach ($parent_group->result_array() as $key => $value) {
-                                        $selected = ($user->id <> 0 && $user->id == $value['id']) ? 'selected = selected' : '';
+                                        $selected = ($user->id <> 0 && $user->parent_position_group_id == $value['id']) ? 'selected = selected' : '';
                                         echo '<option value="'.$value['id'].'" '.$selected.'>'.$value['title'].'</option>';
                                         }
                                         ?>
@@ -156,7 +156,7 @@
         <!-- End Edit Modal-->
 
         <!--Delete Modal-->
-        <div class="modal fade" id="deleteModal<?php echo $user->id?>" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal fade" id="deleteModal<?php echo $user->id?>" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
           <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -188,6 +188,7 @@
                             $("[data-dismiss=modal]").trigger({ type: "click" });
                             $('#MsgBad2<?=$user->id?>').hide();
                             $('#MsgGood').text('Data Updated').fadeIn().delay(3000).fadeOut("slow");
+                            setTimeout(function(){location.reload()},2000);
                         }
                     }, 'json');
                     return false;
@@ -201,11 +202,14 @@
                             getTable();getModal();;
                             $("[data-dismiss=modal]").trigger({ type: "click" });
                             $('#MsgGood').text('Data Deleted').fadeIn().delay(4000).fadeOut("slow");
+                            setTimeout(function(){location.reload()},2000);
                         }
                     }, 'json');
                     return false;
                 });
+
+                 $('#parent_group_id<?php echo $user->id?>').select2();
             });
         </script>
     <?php endforeach;?>
-	<script src="<?php echo assets_url('js/main.js'); ?>"></script>
+	

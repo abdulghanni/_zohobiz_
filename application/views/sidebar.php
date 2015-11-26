@@ -30,9 +30,7 @@
       <li class=""> <a href="javascript:;"> <i class="icon-plus-sign"></i> <span class="title">Form pengajuan</span> <span class="arrow "></span> </a>
         <ul class="sub-menu">
           <li > <a href="<?php echo site_url('form_cuti')?>">Cuti</a> </li>
-          <?php echo ($this->ion_auth->is_superior1()) ? '<li > <a href="'.site_url('form_cuti/index_superior1').'">Cuti - Subordinate appr1</a> </li>' : "";?>
-          <?php echo ($this->ion_auth->is_superior2()) ? '<li > <a href="'.site_url('form_cuti/index_superior2').'">Cuti - Subordinate appr2</a> </li>' : "";?>
-          <?php echo ($this->ion_auth->is_hr()) ? '<li > <a href="'.site_url('form_cuti/index_hr').'">Cuti - HR</a> </li>' : "";?>
+          
           <li > <a href="<?php echo site_url('form_spd_dalam') ?>">Perjalanan dinas - dalam kota</a> </li>          
           <li > <a href="<?php echo site_url('form_spd_luar') ?>">Perjalanan dinas - luar kota</a> </li>            
           <li > <a href="<?php echo site_url('form_absen') ?>">Keterangan tidak absen</a> </li>
@@ -50,6 +48,13 @@
           <li > <a href="form_retirement.html">Retirement</a> </li>          
           <li > <a href="<?php echo site_url('form_resignment') ?>">Resignment</a> </li>          
           <li > <a href="form_recruitment.html">Recruitment</a> </li>          
+        </ul>
+      </li>
+      <li class=""> <a href="javascript:;"> <i class="icon-ok-sign"></i> <span class="title">Approval</span> <span class="arrow "></span> </a>
+        <ul class="sub-menu">
+          <?php echo ($this->ion_auth->is_superior1()) ? '<li > <a href="'.site_url('form_cuti/index_superior1').'">Cuti - Subordinate appr1</a> </li>' : "";?>
+          <?php echo ($this->ion_auth->is_superior2()) ? '<li > <a href="'.site_url('form_cuti/index_superior2').'">Cuti - Subordinate appr2</a> </li>' : "";?>
+          <?php echo ($this->ion_auth->is_hr()) ? '<li > <a href="'.site_url('form_cuti/index_hr').'">Cuti - HR</a> </li>' : "";?>
         </ul>
       </li>
       <li class=""> <a href="javascript:;"> <i class="icon-custom-form"></i> <span class="title">Analisis & Laporan</span> <span class="arrow "></span> </a>

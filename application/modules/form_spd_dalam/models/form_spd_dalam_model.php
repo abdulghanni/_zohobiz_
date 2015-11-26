@@ -300,6 +300,7 @@ class Form_spd_dalam_model extends CI_Model
                 $this->tables['users_spd_dalam'].'.*',
                 $this->tables['users_spd_dalam'].'.id as id',
                 $this->tables['users_spd_dalam'].'.id as form_spd_dalam_id',
+                $this->tables['users_spd_dalam'].'.user_id as user_id',
             
                 $this->tables['users'].'.first_name as first_name',
                 $this->tables['users'].'.last_name as last_name',
@@ -570,7 +571,8 @@ class Form_spd_dalam_model extends CI_Model
                 $this->tables['users_employement'].'.organization_id as organization_id',
                 $this->tables['users_employement'].'.seniority_date as seniority_date',
                 $this->tables['organization'].'.title as organization_title',
-                $this->tables['position'].'.title as position_title'
+                $this->tables['position'].'.title as position_title',
+                $this->tables['position'].'.parent_position_id as parent_position_id'
             ));
 
             $this->db->join('users_employement', 'users.id = users_employement.user_id', 'left');

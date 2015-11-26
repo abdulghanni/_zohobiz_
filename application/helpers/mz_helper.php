@@ -837,6 +837,8 @@ if (!function_exists('tableconfig')){
 		if($result){
 				$CI->db->cache_delete_all();
 			}
+
+
 	}
 
 ?>

@@ -67,7 +67,7 @@
             <th width="10%"><?php echo anchor('position/index/'.$ftitle_param.'/position_group/'.(($sort_order == 'asc' && $sort_by == 'position_group') ? 'desc' : 'asc'), lang('position_group'));?></th>
 			<th width="10%"><?php echo anchor('position/index/'.$ftitle_param.'/position_parent/'.(($sort_order == 'asc' && $sort_by == 'position_parent') ? 'desc' : 'asc'), lang('position_parent'));?></th>
 			<th width="10%"><?php echo anchor('position/index/'.$ftitle_param.'/organization/'.(($sort_order == 'asc' && $sort_by == 'organization') ? 'desc' : 'asc'), lang('organization'));?></th>
-			<th width="10%"><?php echo anchor('position/index/'.$ftitle_param.'/description/'.(($sort_order == 'asc' && $sort_by == 'description') ? 'desc' : 'asc'), lang('description'));?></th>
+			<!-- <th width="10%"><?php echo anchor('position/index/'.$ftitle_param.'/description/'.(($sort_order == 'asc' && $sort_by == 'description') ? 'desc' : 'asc'), lang('description'));?></th> -->
 			<th width="10%"><?php echo lang('index_action_th');?></th>                                  
         </tr>
     </thead>
@@ -86,11 +86,12 @@
                     <td valign="middle"><?php echo $user->position_group;?></td>
                     <td valign="middle"><?php echo $user->position_parent;?></td>
                     <td valign="middle"><?php echo $user->organization;?></td>
-                    <td valign="middle"><?php echo $user->description;?></td>
+                    <!-- <td valign="middle"><?php echo $user->description;?></td> -->
                     <td valign="middle">
                         <button type="button" class="btn btn-info btn-small" data-toggle="modal" data-target="#editModal<?php echo $user->id?>" title="<?php echo lang('edit_button')?>"><i class="icon-paste"></i></button>
                         
                         <button class='btn btn-danger btn-small' type="button" name="remove_levels" value="Delete" data-toggle="modal" data-target="#deleteModal<?php echo $user->id?>" title="<?php echo lang('delete_button')?>"><i class="icon-warning-sign"></i></button>
+                        
                     </td>
                 </tr>
             <?php endforeach;?>

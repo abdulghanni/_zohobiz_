@@ -21,7 +21,7 @@ class position extends MX_Controller {
 
     }
 
-    function index($ftitle = "fn:",$sort_by = "id", $sort_order = "asc", $offset = 0)
+    function index($ftitle = "fn:",$sort_by = "id", $sort_order = "desc", $offset = 0)
     {
 
         if (!$this->ion_auth->logged_in())
@@ -90,7 +90,7 @@ class position extends MX_Controller {
         }
     }
 
-    function get_table($ftitle = "fn:",$sort_by = "id", $sort_order = "asc", $offset = 0)
+    function get_table($ftitle = "fn:",$sort_by = "id", $sort_order = "desc", $offset = 0)
     {
 
         if (!$this->ion_auth->logged_in())
@@ -175,18 +175,31 @@ class position extends MX_Controller {
             //list of filterize limit position for pagination  
             $this->data['position'] = $this->position_model->position()->result();
 			
-			$f_position_group = array("is_deleted" => 0);
+			$f_position_group = array("is_deleted" => "where/0");
             $q_position_group = GetAll('position_group', $f_position_group);
             $this->data['position_group'] = ($q_position_group->num_rows() > 0 ) ? $q_position_group : array();
 
-            $f_parent = array("is_deleted" => 0);
+            $f_parent = array("is_deleted" => "where/0");
             $q_parent = GetAll('position', $f_parent);
 			$this->data['q_parent'] = $q_parent;
             $this->data['parent'] = ($q_parent->num_rows() > 0 ) ? $q_parent : array();
 			
-			$f_organization = array("is_deleted" => 0);
-            $q_organization = GetAll('organization', $f_organization);
+			$f_organization = array(
+                "organization.is_deleted" => "where/0",
+                "organization.organization_class_id"=>"order/asc"
+                );
+            //GetJoin($tbl,$tbl_join,$condition,$type,$select,$filter=array())
+            //$q_organization = GetAll('organization', $f_organization);
+            $q_organization = GetJoin('organization','organization_class','organization.organization_class_id = organization_class.id','left','organization.*, organization_class.title as organization_class_title', $f_organization);
             $this->data['organization'] = ($q_organization->num_rows() > 0 ) ? $q_organization : array();
+
+            $f_competency_group = array(
+                "is_deleted"=>"where/0"
+                );
+            $q_competency_group = GetAll('competency_group',$f_competency_group);
+            $this->data['competency_group'] = ($q_competency_group->num_rows() > 0 ) ? $q_competency_group : array();
+
+
 
             $this->_render_page('position/modal/index', $this->data);
 		}
@@ -240,10 +253,105 @@ class position extends MX_Controller {
 
             $this->position_model->update($id, $data);
 
+            if($this->input->post('competency_def1'))
+            {
+                foreach ($this->input->post('competency_def1') as $value1) {
+                    if($this->cek_position_competency($id,$value1) == FALSE)
+                    {
+                        $data1 = array(
+                        'position_id'             => $id,
+                        'competency_def_id'       => $value1,
+                        'created_on'        => date('Y-m-d H:i:s',strtotime('now')),
+                        'created_by'        => $this->session->userdata('user_id'),
+                        );
+
+                        $this->db->insert('position_competency',$data1);    
+                    }        
+                }
+            }
+
+            if($this->input->post('competency_def2'))
+            {
+                foreach ($this->input->post('competency_def2') as $value2) 
+                {
+                    if($this->cek_position_competency($id,$value2) == FALSE)
+                    {
+                        $data2 = array(
+                            'position_id'             => $id,
+                            'competency_def_id'       => $value2,
+                            'created_on'        => date('Y-m-d H:i:s',strtotime('now')),
+                            'created_by'        => $this->session->userdata('user_id'),
+                            );
+
+                        $this->db->insert('position_competency',$data2);
+                    }
+                }
+            }
+
+            if($this->input->post('competency_def3'))
+            {
+                foreach ($this->input->post('competency_def3') as $value3) 
+                {
+                    if($this->cek_position_competency($id,$value3) == FALSE)
+                    {
+                        $data3 = array(
+                            'position_id'             => $id,
+                            'competency_def_id'       => $value3,
+                            'created_on'        => date('Y-m-d H:i:s',strtotime('now')),
+                            'created_by'        => $this->session->userdata('user_id'),
+                            );
+
+                        $this->db->insert('position_competency',$data3);
+                    }
+                }
+            }
+
             echo json_encode(array('st'=>1));
             
         }
+    }
 
+    public function update_itj()
+    {
+        $id = $this->input->post('id');
+        $itj = $this->input->post('itj');
+
+        $data = array('itj'=>$itj);
+        $this->db->where('id', $id);
+
+        if($this->db->update('position_competency',$data)){
+            echo json_encode(array('st'=>1,'itj_new'=>$itj));    
+        }else{
+            echo json_encode(array('st'=>0));    
+        }
+        
+    }
+
+    public function del_pos_comp()
+    {
+        $is_deleted = $this->input->post('is_deleted');
+        $id = $this->input->post('id');
+
+        $data = array('is_deleted'=>$is_deleted);
+        $this->db->where('id', $id);
+
+        if($this->db->update('position_competency',$data)){
+            echo json_encode(array('st'=>1));    
+        }else{
+            echo json_encode(array('st'=>0));    
+        }
+        
+    }
+
+    private function cek_position_competency($position_id,$competency_def_id)
+    {
+        $f_ = array('competency_def_id'=>'where/'.$competency_def_id,'position_id'=>'where/'.$position_id,'is_deleted'=>'where/0');
+        $q_ = GetAll_('position_competency',$f_);
+        if($q_->num_rows() > 0){
+            return TRUE;
+        }else{
+            return FALSE;
+        }
     }
 
     public function delete($id)

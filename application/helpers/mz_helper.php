@@ -195,10 +195,38 @@ if (!function_exists('GetAll')){
 			if($exp[0] == "group") $CI->db->group_by($key);
 		}
 		
-		if($tbl == "kg_news_subcategory" || $tbl == "contents" || $tbl == "news" || $tbl=="news_category" || $tbl=="kg_view_news")
-		$CI->db->where("id_lang", GetIdLang());
+		//if($tbl == "kg_news_subcategory" || $tbl == "contents" || $tbl == "news" || $tbl=="news_category" || $tbl=="kg_view_news")
+		//$CI->db->where("id_lang", GetIdLang());
 		
 		$q = $CI->db->where($filter)->get($tbl);
+		
+		return $q;
+	}
+}
+
+if (!function_exists('GetAll_')){
+	function GetAll_($tbl,$filter=array())
+	{
+		$CI =& get_instance();
+		foreach($filter as $key=> $value)
+		{
+			$exp = explode("/",$value);
+			if(isset($exp[1]))
+			{
+				if($exp[0] == "where") $CI->db->where($key, $exp[1]);
+				else if($exp[0] == "like") $CI->db->like($key, $exp[1]);
+				else if($exp[0] == "order") $CI->db->order_by($key, $exp[1]);
+				else if($key == "limit") $CI->db->limit($exp[1], $exp[0]);
+			}
+			else if($exp[0] == "where") $CI->db->where($key);
+			
+			if($exp[0] == "group") $CI->db->group_by($key);
+		}
+		
+		//if($tbl == "kg_news_subcategory" || $tbl == "contents" || $tbl == "news" || $tbl=="news_category" || $tbl=="kg_view_news")
+		//$CI->db->where("id_lang", GetIdLang());
+		
+		$q = $CI->db->get($tbl);
 		
 		return $q;
 	}
@@ -839,6 +867,42 @@ if (!function_exists('tableconfig')){
 			}
 
 
+	}
+
+	if ( ! function_exists('options_row'))
+	{
+		function options_row($model=NULL,$function=NULL,$id_field=NULL,$title_field=NULL,$default=NULL)
+		{
+			$CI =& get_instance();
+			$query = get_query_view($model, $function, '' ,'','');
+			if($default) $data['options_row'][0] = $default;
+			
+			foreach($query['result_array'] as $row)
+			{
+				$data['options_row'][$row[$id_field]] = $row[$title_field];
+			}
+			return $data['options_row'];
+		}
+	}
+
+	if ( ! function_exists('get_query_view'))
+	{
+		function get_query_view($model, $function, $function_count=NULL,$limit=NULL, $uri_segment=NULL)
+		{
+			$CI =& get_instance();
+			if($uri_segment != NULL)
+				$offset = $CI->uri->segment($uri_segment);
+			else
+				$offset = 0;
+			
+			$data['query'] = $q_ = $CI->$model->$function($limit,$offset);
+			$data['result_array'] = $q_->result_array();
+			if($function_count != '')
+				$data['num_rows'] = $CI->$model->$function_count();
+			else
+				$data['num_rows'] = $q_->num_rows();
+			return $data;
+		}
 	}
 
 ?>

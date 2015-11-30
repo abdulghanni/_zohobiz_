@@ -7088,3 +7088,11 @@ ul.my-friends li .profile-pic{
     transition: all 0.12s linear 0s !important;
     font: 16px "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
+
+u.pos_comp{
+	cursor: pointer;
+}
+
+.pos_comp_del{
+	cursor:pointer;
+}

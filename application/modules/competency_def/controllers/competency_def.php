@@ -1,6 +1,6 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
-
-class Competency_def extends MX_Controller {
+ini_set('MAX_EXECUTION_TIME', 0);
+class competency_def extends MX_Controller {
 
     public $data;
 
@@ -10,21 +10,27 @@ class Competency_def extends MX_Controller {
         $this->load->library('authentication', NULL, 'ion_auth');
         $this->load->library('form_validation');
         $this->load->helper('url');
-        
+
         $this->load->database();
-        $this->load->model('competency_def/competency_def_model','competency_def_model');
-        $this->load->model('competency_group/competency_group_model','competency_group_model');
-        $this->load->model('competency_level/competency_level_model','competency_level_model');
-        
+
         $this->form_validation->set_error_delimiters($this->config->item('error_start_delimiter', 'ion_auth'), $this->config->item('error_end_delimiter', 'ion_auth'));
 
         $this->lang->load('auth');
         $this->load->helper('language');
-
+        $this->load->model('competency_def_model','competency_def_model');
     }
 
-    function index($ftitle = "fn:",$sort_by = "id", $sort_order = "asc", $offset = 0)
+    var $title = 'Education Group';
+    var $limit = 100000;
+    var $controller_name = 'competency_def';
+    var $model_name = 'competency_def_model';
+    var $id_table = 'id';
+    var $list_view = 'competency_def/index';
+
+    //redirect if needed, otherwise display the user list
+    function index($id=NULL)
     {
+
         if (!$this->ion_auth->logged_in())
         {
             redirect('auth/login', 'refresh');
@@ -35,443 +41,125 @@ class Competency_def extends MX_Controller {
         }
         else
         {
-            //set the flash data error message if there is one
-            $this->data['message'] = (validation_errors()) ? validation_errors() : $this->session->flashdata('message');
+            $data['url_ajax_list'] = site_url('competency_def/ajax_list');
+            $data['url_ajax_add'] = site_url('competency_def/ajax_add');
+            $data['url_ajax_edit'] = site_url('competency_def/ajax_edit');
+            $data['url_ajax_delete'] = site_url('competency_def/ajax_delete');
+            $data['url_ajax_update'] = site_url('competency_def/ajax_update');
 
-            //set sort order
-            $this->data['sort_order'] = $sort_order;
-            
-            //set sort by
-            $this->data['sort_by'] = $sort_by;
-           
-            //set filter by title
-            $this->data['ftitle_param'] = $ftitle; 
-            $exp_ftitle = explode(":",$ftitle);
-            $ftitle_re = str_replace("_", " ", $exp_ftitle[1]);
-            $ftitle_post = (strlen($ftitle_re) > 0) ? array('competency_def.title'=>$ftitle_re) : array() ;
-            
-            //set default limit in var $config['list_limit'] at application/config/ion_auth.php 
-            $this->data['limit'] = $limit = (strlen($this->input->post('limit')) > 0) ? $this->input->post('limit') : 10 ;
+            $data['options_competency_group'] = options_row($this->model_name,'get_competency_group','id','title','Competency group');
 
-            $this->data['offset'] = 6;
-
-            //list of filterize all competency_def  
-            $this->data['competency_def_all'] = $this->competency_def_model->like($ftitle_post)->where('is_deleted',0)->competency_def()->result();
-            
-            $this->data['num_rows_all'] = $this->competency_def_model->like($ftitle_post)->where('is_deleted',0)->competency_def()->num_rows();
-
-            //list of filterize limit competency_def for pagination  
-            $this->data['competency_def'] = $this->competency_def_model->like($ftitle_post)->where('is_deleted',0)->limit($limit)->offset($offset)->order_by($sort_by, $sort_order)->competency_def()->result();
-
-            $this->data['_num_rows'] = $this->competency_def_model->like($ftitle_post)->where('is_deleted',0)->limit($limit)->offset($offset)->order_by($sort_by, $sort_order)->competency_def()->num_rows();
-
-             //config pagination
-             $config['base_url'] = base_url().'competency_def/index/fn:'.$exp_ftitle[1].'/'.$sort_by.'/'.$sort_order.'/';
-             $config['total_rows'] = $this->data['num_rows_all'];
-             $config['per_page'] = $limit;
-             $config['uri_segment'] = 6;
-
-            //inisialisasi config
-             $this->pagination->initialize($config);
-
-            //create pagination
-            $this->data['halaman'] = $this->pagination->create_links();
-
-            $this->data['ftitle_search'] = array(
-                'name'  => 'title',
-                'id'    => 'title',
-                'type'  => 'text',
-                'value' => $this->form_validation->set_value('title'),
-            );
-
-            $competency_group = $this->competency_group_model->select('id,title')->where('is_deleted',0)->competency_group();
-            $return = array();
-            //$return[0] = strtoupper('please select');
-                foreach($competency_group->result_array() as $row){
-                    $return[$row['id']] = $row['title'];
-                }
-            $this->data['options_competency_group'] =  $return;
-               
-            
-            $this->_render_page('competency_def/index', $this->data);
+            $this->_render_page('competency_def/index',$data);
         }
     }
 
-    public function insert_()
+    public function ajax_list()
     {
+        $list = $this->competency_def_model->get_datatables();
+        $data = array();
+        $no = $_POST['start'];
+        foreach ($list as $val) {
+            $no++;
+            $row = array();
+            $row[] = $val->title;
+            $row[] = $val->code;
+            $row[] = $val->competency_group;
 
-        $this->form_validation->set_rules('title', 'Title', 'trim|required');
+            //add html for action
+            $row[] = '<a class="btn btn-sm btn-primary btn-mini" href="javascript:void()" title="Edit" onclick="edit_('."'".$val->id."'".')"><i class="icon-edit"></i> Edit</a>
+            <a class="btn btn-sm btn-danger btn-mini" href="javascript:void()" title="Hapus" onclick="delete_('."'".$val->id."'".')"><i class="icon-remove"></i> Delete</a>';
         
-        if($this->form_validation->run() == FALSE)
-        {
-            echo json_encode(array('st'=>0, 'errors'=>validation_errors('<div class="alert alert-danger" role="alert">', '</div>')));
+            $data[] = $row;
         }
-        else
-        {
-           
-            $title    = $this->input->post('title');
-            $is_deleted = $this->input->post('is_deleted');
 
-            $additional_data = array(
-                'created_on'        => date('Y-m-d',strtotime('now')),
-                'created_by'        => $this->session->userdata('user_id'),
-                'is_deleted'        => $is_deleted,
-            );
-
-            if ($this->form_validation->run() == true && $this->competency_def_model->create_($title, $additional_data))
-            {
-                echo json_encode(array('st'=>1));   
-            }else{
-                echo json_encode(array('st'=>0, 'errors'=>validation_errors('<div class="alert alert-danger" role="alert">', '</div>')));
-            }
-        }
+        $output = array(
+                        "draw" => $_POST['draw'],
+                        "recordsTotal" => $this->competency_def_model->count_all(),
+                        "recordsFiltered" => $this->competency_def_model->count_filtered(),
+                        "data" => $data,
+                );
+        //output to json format
+        echo json_encode($output);
     }
 
-    function index__($ftitle = "fn:",$sort_by = "id", $sort_order = "asc", $offset = 0)
+    public function ajax_add()
     {
-
-        if (!$this->ion_auth->logged_in())
-        {
-            //redirect them to the login page
-            redirect('auth/login', 'refresh');
-        }
-        elseif (!$this->ion_auth->is_admin()) //remove this elseif if you want to enable this for non-admins
-        {
-            //redirect them to the home page because they must be an administrator to view this
-            //return show_error('You must be an administrator to view this page.');
-            return show_error('You must be an administrator to view this page.');
-        }
-        else
-        {
-            //set the flash data error message if there is one
-            $this->data['message'] = (validation_errors()) ? validation_errors() : $this->session->flashdata('message');
-
-            //set sort order
-            $this->data['sort_order'] = $sort_order;
-            
-            //set sort by
-            $this->data['sort_by'] = $sort_by;
-           
-            //set filter by title
-            $this->data['ftitle_param'] = $ftitle; 
-            $exp_ftitle = explode(":",$ftitle);
-            $ftitle_re = str_replace("_", " ", $exp_ftitle[1]);
-            $ftitle_post = (strlen($ftitle_re) > 0) ? array('competency_def.title'=>$ftitle_re) : array() ;
-            
-            //set default limit in var $config['list_limit'] at application/config/ion_auth.php 
-            $this->data['limit'] = $limit = (strlen($this->input->post('limit')) > 0) ? $this->input->post('limit') : 10 ;
-
-            $this->data['offset'] = 6;
-
-            //list of filterize all competency_def  
-            $this->data['competency_def_all'] = $this->competency_def_model->like($ftitle_post)->where('is_deleted',0)->competency_def()->result();
-            
-            $this->data['num_rows_all'] = $this->competency_def_model->like($ftitle_post)->where('is_deleted',0)->competency_def()->num_rows();
-
-            //list of filterize limit competency_def for pagination  
-            $this->data['competency_def'] = $this->competency_def_model->like($ftitle_post)->where('is_deleted',0)->limit($limit)->offset($offset)->order_by($sort_by, $sort_order)->competency_def()->result();
-
-            $this->data['_num_rows'] = $this->competency_def_model->like($ftitle_post)->where('is_deleted',0)->limit($limit)->offset($offset)->order_by($sort_by, $sort_order)->competency_def()->num_rows();
-
-             //config pagination
-             $config['base_url'] = base_url().'competency_def/index/fn:'.$exp_ftitle[1].'/'.$sort_by.'/'.$sort_order.'/';
-             $config['total_rows'] = $this->data['num_rows_all'];
-             $config['per_page'] = $limit;
-             $config['uri_segment'] = 6;
-
-            //inisialisasi config
-             $this->pagination->initialize($config);
-
-            //create pagination
-            $this->data['halaman'] = $this->pagination->create_links();
-
-            $this->data['ftitle_search'] = array(
-                'name'  => 'title',
-                'id'    => 'title',
-                'type'  => 'text',
-                'value' => $this->form_validation->set_value('title'),
-            );
-
-            $this->_render_page('competency_def/index', $this->data);
-        }
+        $this->_validate();
+        $data = array(
+                'title' => $this->input->post('title'),
+                'code' => $this->input->post('code'),
+                'comp_group_id' => $this->input->post('comp_group_id'),
+                'created_on' => date('Y-m-d H:i:s', now()),
+                'created_by' => GetUserID()
+                );
+        $insert = $this->competency_def_model->save($data);
+        echo json_encode(array("status" => TRUE));
     }
 
-    function get_table($ftitle = "fn:",$sort_by = "id", $sort_order = "asc", $offset = 0)
-    {
-
-        if (!$this->ion_auth->logged_in())
-        {
-            //redirect them to the login page
-            redirect('auth/login', 'refresh');
-        }
-        elseif (!$this->ion_auth->is_admin()) //remove this elseif if you want to enable this for non-admins
-        {
-            //redirect them to the home page because they must be an administrator to view this
-            //return show_error('You must be an administrator to view this page.');
-            return show_error('You must be an administrator to view this page.');
-        }
-        else
-        {
-            //set the flash data error message if there is one
-            $this->data['message'] = (validation_errors()) ? validation_errors() : $this->session->flashdata('message');
-
-            //set sort order
-            $this->data['sort_order'] = $sort_order;
-            
-            //set sort by
-            $this->data['sort_by'] = $sort_by;
-           
-            //set filter by title
-            $this->data['ftitle_param'] = $ftitle; 
-            $exp_ftitle = explode(":",$ftitle);
-            $ftitle_re = str_replace("_", " ", $exp_ftitle[1]);
-            $ftitle_post = (strlen($ftitle_re) > 0) ? array('competency_def.title'=>$ftitle_re) : array() ;
-            
-            //set default limit in var $config['list_limit'] at application/config/ion_auth.php 
-            $this->data['limit'] = $limit = (strlen($this->input->post('limit')) > 0) ? $this->input->post('limit') : 10 ;
-
-            $this->data['offset'] = $offset = $this->uri->segment(6);
-
-            //list of filterize all competency_def  
-            $this->data['competency_def_all'] = $this->competency_def_model->like($ftitle_post)->where('is_deleted',0)->competency_def()->result();
-
-            $this->data['num_rows_all'] = $this->competency_def_model->like($ftitle_post)->where('is_deleted',0)->competency_def()->num_rows();
-
-            //list of filterize limit competency_def for pagination  
-            $this->data['competency_def'] = $this->competency_def_model->like($ftitle_post)->where('is_deleted',0)->limit($limit)->offset($offset)->order_by($sort_by, $sort_order)->competency_def()->result();
-
-            $this->data['_num_rows'] = $this->competency_def_model->like($ftitle_post)->where('is_deleted',0)->limit($limit)->offset($offset)->order_by($sort_by, $sort_order)->competency_def()->num_rows();
-
-             //config pagination
-             $config['base_url'] = base_url().'competency_def/index/fn:'.$exp_ftitle[1].'/'.$sort_by.'/'.$sort_order.'/';
-             $config['total_rows'] = $this->data['num_rows_all'];
-             $config['per_page'] = $limit;
-             $config['uri_segment'] = $offset = $this->uri->segment(6);
-
-            //inisialisasi config
-             $this->pagination->initialize($config);
-
-            //create pagination
-            $this->data['halaman'] = $this->pagination->create_links();
-
-            $this->data['ftitle_search'] = array(
-                'name'  => 'title',
-                'id'    => 'title',
-                'type'  => 'text',
-                'value' => $this->form_validation->set_value('title'),
-            );
-
-            $this->_render_page('competency_def/table/index', $this->data);
-        }
-    }
-	
-	function get_modal()
-    {
-
-        if (!$this->ion_auth->logged_in())
-        {
-            //redirect them to the login page
-            redirect('auth/login', 'refresh');
-        }
-        elseif (!$this->ion_auth->is_admin()) //remove this elseif if you want to enable this for non-admins
-        {
-            //redirect them to the home page because they must be an administrator to view this
-            //return show_error('You must be an administrator to view this page.');
-            return show_error('You must be an administrator to view this page.');
-        }
-        else
-        {
-			$this->data['competency_def'] = $this->competency_def_model->where('is_deleted',0)->competency_def()->result();
-
-            $competency_group = $this->competency_group_model->select('id,title')->where('is_deleted',0)->competency_group();
-            $return = array();
-            //$return[0] = strtoupper('please select');
-                foreach($competency_group->result_array() as $row){
-                    $return[$row['id']] = $row['title'];
-
-                }
-            $this->data['options_competency_group'] =  $competency_group;
-
-			$this->load->view('competency_def/modal/index', $this->data);
-		}
-	}
-
-    function keywords(){
-        if (!$this->ion_auth->logged_in())
-        {
-            //redirect them to the login page
-            redirect('auth/login', 'refresh');
-        }
-        elseif (!$this->ion_auth->is_admin()) //remove this elseif if you want to enable this for non-admins
-        {
-            //redirect them to the home page because they must be an administrator to view this
-            //return show_error('You must be an administrator to view this page.');
-            return show_error('You must be an administrator to view this page.');
-        }
-        else
-        {
-            $title = $this->input->post('title');
-            $base = base_url();
-
-            if($title=null){
-                echo json_encode(array('st'=>0));
-            }else{
-                echo json_encode(array('st' =>1, 'title'=>$this->input->post('title'), 'base_url' => $base));
-            }
-        }
-    }
-
-    public function update($id)
-    {
-        $this->form_validation->set_rules('title', lang('title'), 'trim|required');
-        $this->form_validation->set_rules('code', lang('code_label'), 'trim|required');
-        $this->form_validation->set_rules('competency_group_id', lang('comp_group_label'), 'trim|required');
-        
-        if($this->form_validation->run() == FALSE)
-        {
-            echo json_encode(array('st'=>0, 'errors'=>validation_errors('<div class="alert alert-danger" role="alert">', '</div>')));
-        }
-        else
-        {         
-            $data = array(
-                    'title'             => $this->input->post('title'),
-                    'code'              => $this->input->post('code'),
-                    'comp_group_id'     => $this->input->post('competency_group_id'),
-                    'edited_on'         => date('Y-m-d',strtotime('now')),
-                    'edited_by'         => $this->session->userdata('user_id'),
-                    );
-
-            $this->competency_def_model->update($id, $data);
-
-            $competency_level = $this->competency_level_model->where('competency_def_id',$id)->where('is_deleted',0)->competency_level()->result();
-            foreach ($competency_level as $value) {
-                $id_level = $value->id;
-                $data_level = array(
-                        'title'             => $this->input->post('title_level'.$id_level),
-                        'description'       => $this->input->post('description_level'.$id_level),
-                        'edited_on'         => date('Y-m-d',strtotime('now')),
-                        'edited_by'         => $this->session->userdata('user_id'),
-                    );
-                $this->competency_level_model->update($id_level, $data_level);
-
-            }
-
-            echo json_encode(array('st'=>1));
-            
-        }
-
-    }
-
-    public function delete($id)
+    public function ajax_delete($id)
     {
         $data = array(
-                'is_deleted'    => 1,
-                'deleted_on'    =>date('Y-m-d',strtotime('now')),
-                'deleted_by'    =>$this->session->userdata('user_id'),
-                );
-
-        $this->competency_def_model->update($id, $data);
-
-        echo json_encode(array('st'=>1));
+                'is_deleted' => 1,
+                'deleted_on' => date('Y-m-d H:i:s', now()),
+                'deleted_by' => GetUserID()
+            );
+        $this->competency_def_model->update(array('id' => $id), $data);
+        echo json_encode(array("status" => TRUE));
     }
 
-    public function add()
+    public function ajax_edit($id)
     {
-
-        $this->form_validation->set_rules('title', $this->lang->line('title'), 'trim|required');
-        $this->form_validation->set_rules('code', $this->lang->line('code_label'), 'trim|required');
-        $this->form_validation->set_rules('competency_group_id', $this->lang->line('comp_group_label'), 'trim|required');
-        
-        if($this->form_validation->run() == FALSE)
-        {
-            echo json_encode(array('st'=>0, 'errors'=>validation_errors('<div class="alert alert-danger" role="alert">', '</div>')));
-        }
-        else
-        {
-           
-            $title    = $this->input->post('title');
-
-            $additional_data = array(
-                'created_on'            => date('Y-m-d',strtotime('now')),
-                'created_by'            => $this->session->userdata('user_id'),
-                'code'                  => $this->input->post('code'),
-                'comp_group_id'   => $this->input->post('competency_group_id'),
-            );
-
-            if ($this->form_validation->run() == true)
-            {
-                $create = $this->competency_def_model->create_($title, $additional_data);
-
-                for ($i=1; $i <= 4; $i++) { 
-                    $title_level = 'empty';
-                    $additional_data_level = array(
-                        'created_on'            => date('Y-m-d',strtotime('now')),
-                        'created_by'            => $this->session->userdata('user_id'),
-                        'level'                  => $i,
-                        'competency_def_id'   => $create,
-                        'description'   => 'empty',
-                        'title'   => 'empty',
-                    );
-
-                    $this->db->insert('competency_level', $additional_data_level);
-                    //$this->competency_def_model->create_level($title_level, $additional_data_level);
-                }
-
-                echo json_encode(array('st'=>1));   
-            }else{
-                echo json_encode(array('st'=>0, 'errors'=>validation_errors('<div class="alert alert-danger" role="alert">', '</div>')));
-            }
-        }
+        $data = $this->competency_def_model->get_by_id($id);
+        echo json_encode($data);
     }
 
-     public function add__()
+    public function ajax_update()
     {
-
-        /*$this->form_validation->set_rules('title', $this->lang->line('title'), 'trim|required');
-        $this->form_validation->set_rules('code', $this->lang->line('code_label'), 'trim|required');
-        $this->form_validation->set_rules('competency_group_id', $this->lang->line('comp_group_label'), 'trim|required');
-        
-        if($this->form_validation->run() == FALSE)
-        {
-            echo json_encode(array('st'=>0, 'errors'=>validation_errors('<div class="alert alert-danger" role="alert">', '</div>')));
-        }
-        else
-        {*/
-           
-            $title    = $this->input->post('title');
-
-            $additional_data = array(
-                'created_on'            => date('Y-m-d',strtotime('now')),
-                'created_by'            => $this->session->userdata('user_id'),
-                'code'                  => $this->input->post('code'),
-                'competency_group_id'   => $this->input->post('competency_group_id'),
+        $this->_validate();
+        $data = array(
+                'title' => $this->input->post('title'),
+                'code' => $this->input->post('code'),
+                'comp_group_id' => $this->input->post('comp_group_id'),
+                'edited_on' => date('Y-m-d H:i:s', now()),
+                'edited_by' => GetUserID()
             );
+        $this->competency_def_model->update(array('id' => $this->input->post('id')), $data);
+        echo json_encode(array("status" => TRUE));
+    }
 
-            /*if ($this->form_validation->run() == true)
-            {*/
-                $create = $this->competency_def_model->create_($title, $additional_data);
+    private function _validate()
+    {
+        $data = array();
+        $data['error_string'] = array();
+        $data['inputerror'] = array();
+        $data['status'] = TRUE;
 
-                for ($i=1; $i <= 4; $i++) { 
-                    $title_level = 'empty';
-                    $additional_data_level = array(
-                        'created_on'            => date('Y-m-d',strtotime('now')),
-                        'created_by'            => $this->session->userdata('user_id'),
-                        'level'                  => $i,
-                        'competency_def_id'   => $create,
-                        'description'   => 'empty',
-                        'title'   => 'empty',
-                    );
+        if($this->input->post('title') == '')
+        {
+            $data['inputerror'][] = 'title';
+            $data['error_string'][] = 'Name is required';
+            $data['status'] = FALSE;
+        }
 
-                    $this->db->insert('competency_level', $additional_data_level);
-                    //$this->competency_def_model->create_level($title_level, $additional_data_level);
-                }
+        if($this->input->post('code') == '')
+        {
+            $data['inputerror'][] = 'code';
+            $data['error_string'][] = 'Code is required';
+            $data['status'] = FALSE;
+        }
 
-                echo json_encode(array('st'=>1, 'last_id'=>$create));   
-            /*}
-            else{
-                echo json_encode(array('st'=>0, 'errors'=>validation_errors('<div class="alert alert-danger" role="alert">', '</div>')));
-            }*/
-        //}
+        if($this->input->post('comp_group_id') == '')
+        {
+            $data['inputerror'][] = 'code';
+            $data['error_string'][] = 'Code is required';
+            $data['status'] = FALSE;
+        }
+
+        if($data['status'] === FALSE)
+        {
+            echo json_encode($data);
+            exit();
+        }
     }
 
     function _get_csrf_nonce()
@@ -500,52 +188,45 @@ class Competency_def extends MX_Controller {
 
     function _render_page($view, $data=null, $render=false)
     {
+
         $data = (empty($data)) ? $this->data : $data;
         if ( ! $render)
         {
             $this->load->library('template');
 
-                if(in_array($view, array('competency_def/index')))
-                {
-                    $this->template->set_layout('default');
+            if (in_array($view, array('competency_def/index')))
+            {
+                $this->template->set_layout('default');
 
-                    $this->template->add_js('jquery.min.js');
-                    $this->template->add_js('bootstrap.min.js');
+                $this->template->add_js('jquery.min.js');
+                $this->template->add_js('bootstrap.min.js');
 
-                    $this->template->add_js('jquery-ui-1.10.1.custom.min.js');
-                    $this->template->add_js('jquery.sidr.min.js');
-                    $this->template->add_js('breakpoints.js');
-                    $this->template->add_js('select2.min.js');
+                $this->template->add_js('jquery-ui-1.10.1.custom.min.js');
+                $this->template->add_js('jquery.sidr.min.js');
+                $this->template->add_js('breakpoints.js');
+                $this->template->add_js('select2.min.js');
 
-                    $this->template->add_js('core.js');
-                    $this->template->add_js('purl.js');
+                $this->template->add_js('core.js');
+                $this->template->add_js('purl.js');
 
-                    $this->template->add_js('main.js');
-                    $this->template->add_js('respond.min.js');
+                $this->template->add_js('main.js');
+                $this->template->add_js('respond.min.js');
 
+                
+                $this->template->add_css('jquery-ui-1.10.1.custom.min.css');
+                $this->template->add_css('plugins/select2/select2.css');
+
+                $this->template->add_css('datatables.min.css');
+                $this->template->add_js('datatables.min.js');
+                
+                $this->template->add_js('competency_def.js');
                     
-                    $this->template->add_css('jquery-ui-1.10.1.custom.min.css');
-                    $this->template->add_css('plugins/select2/select2.css');
-                    
-                }
-                elseif(in_array($view, array('competency_def/edit')))
-                {
+            }
 
-                    $this->template->set_layout('default');
-
-                    $this->template->add_js('jquery-ui-1.10.1.custom.min.js');
-                    $this->template->add_js('jqueryblockui.js');
-                    $this->template->add_js('jquery.sidr.min.js');
-                    $this->template->add_js('breakpoints.js');
-                    $this->template->add_js('pace.min.js');
-                    $this->template->add_js('core.js');
-                    
-                    $this->template->add_js('select2.min.js');
-                    
-                    $this->template->add_css('jquery-ui-1.10.1.custom.min.css');
-                    $this->template->add_css('pace-theme-flash.css');
-                }
-
+            if(in_array($view, array('auth/login')))
+            {
+                $this->template->set_layout('layout_login');    
+            }
 
             if ( ! empty($data['title']))
             {
@@ -559,7 +240,5 @@ class Competency_def extends MX_Controller {
             return $this->load->view($view, $data, TRUE);
         }
     }
-
-    
 
 }

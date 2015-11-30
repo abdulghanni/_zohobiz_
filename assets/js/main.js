@@ -764,6 +764,7 @@ $('#search_comp_def').on("submit",function(response){
  $('#parent_group_id').select2();
  $('#competency_group_id').select2();
 
+
  $('#position_id_detail').on("change",function(response){
     var pos_id = $(this).val();
     var url_pos_group = $('#pos_group_url').val();
@@ -797,6 +798,8 @@ $('#search_comp_def').on("submit",function(response){
         }, 'json');
         return false;
     });
+
+  $.fn.modal.Constructor.prototype.enforceFocus = function () {};
 
 
 });

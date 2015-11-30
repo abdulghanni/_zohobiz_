@@ -1,6 +1,6 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
-
-class Organization_class extends MX_Controller {
+ini_set('MAX_EXECUTION_TIME', 0);
+class organization_class extends MX_Controller {
 
     public $data;
 
@@ -10,267 +10,143 @@ class Organization_class extends MX_Controller {
         $this->load->library('authentication', NULL, 'ion_auth');
         $this->load->library('form_validation');
         $this->load->helper('url');
-        
+
         $this->load->database();
-        $this->load->model('organization_class/organization_class_model','organization_class_model');
-        
+
         $this->form_validation->set_error_delimiters($this->config->item('error_start_delimiter', 'ion_auth'), $this->config->item('error_end_delimiter', 'ion_auth'));
 
         $this->lang->load('auth');
         $this->load->helper('language');
-
+        $this->load->model('organization_class_model','organization_class_model');
     }
 
-    function index($ftitle = "fn:",$sort_by = "id", $sort_order = "asc", $offset = 0)
+    var $title = 'Active / Inactive';
+    var $limit = 100000;
+    var $controller_name = 'organization_class';
+    var $model_name = 'organization_class_model';
+    var $id_table = 'id';
+    var $list_view = 'organization_class/index';
+
+    //redirect if needed, otherwise display the user list
+    function index($id=NULL)
     {
 
         if (!$this->ion_auth->logged_in())
         {
-            //redirect them to the login page
             redirect('auth/login', 'refresh');
         }
-        elseif (!$this->ion_auth->is_admin()) //remove this elseif if you want to enable this for non-admins
+        elseif (!$this->ion_auth->is_admin())
         {
-            //redirect them to the home page because they must be an administrator to view this
-            //return show_error('You must be an administrator to view this page.');
             return show_error('You must be an administrator to view this page.');
         }
         else
         {
-            //set the flash data error message if there is one
-            $this->data['message'] = (validation_errors()) ? validation_errors() : $this->session->flashdata('message');
+            $data['url_ajax_list'] = site_url('organization_class/ajax_list');
+            $data['url_ajax_add'] = site_url('organization_class/ajax_add');
+            $data['url_ajax_edit'] = site_url('organization_class/ajax_edit');
+            $data['url_ajax_delete'] = site_url('organization_class/ajax_delete');
+            $data['url_ajax_update'] = site_url('organization_class/ajax_update');
 
-            //set sort order
-            $this->data['sort_order'] = $sort_order;
-            
-            //set sort by
-            $this->data['sort_by'] = $sort_by;
-           
-            //set filter by title
-            $this->data['ftitle_param'] = $ftitle; 
-            $exp_ftitle = explode(":",$ftitle);
-            $ftitle_re = str_replace("_", " ", $exp_ftitle[1]);
-            $ftitle_post = (strlen($ftitle_re) > 0) ? array('organization_class.title'=>$ftitle_re) : array() ;
-            
-            //set default limit in var $config['list_limit'] at application/config/ion_auth.php 
-            $this->data['limit'] = $limit = (strlen($this->input->post('limit')) > 0) ? $this->input->post('limit') : 10 ;
-
-            $this->data['offset'] = 6;
-
-            //list of filterize all organization_class  
-            $this->data['organization_class_all'] = $this->organization_class_model->like($ftitle_post)->where('is_deleted',0)->organization_class()->result();
-            
-            $this->data['num_rows_all'] = $this->organization_class_model->like($ftitle_post)->where('is_deleted',0)->organization_class()->num_rows();
-
-            //list of filterize limit organization_class for pagination  
-            $this->data['organization_class'] = $this->organization_class_model->like($ftitle_post)->where('is_deleted',0)->limit($limit)->offset($offset)->order_by($sort_by, $sort_order)->organization_class()->result();
-
-            $this->data['_num_rows'] = $this->organization_class_model->like($ftitle_post)->where('is_deleted',0)->limit($limit)->offset($offset)->order_by($sort_by, $sort_order)->organization_class()->num_rows();
-
-             //config pagination
-             $config['base_url'] = base_url().'organization_class/index/fn:'.$exp_ftitle[1].'/'.$sort_by.'/'.$sort_order.'/';
-             $config['total_rows'] = $this->data['num_rows_all'];
-             $config['per_page'] = $limit;
-             $config['uri_segment'] = 6;
-
-            //inisialisasi config
-             $this->pagination->initialize($config);
-
-            //create pagination
-            $this->data['halaman'] = $this->pagination->create_links();
-
-            $this->data['ftitle_search'] = array(
-                'name'  => 'title',
-                'id'    => 'title',
-                'type'  => 'text',
-                'value' => $this->form_validation->set_value('title'),
-            );
-
-            $this->_render_page('organization_class/index', $this->data);
+            $this->_render_page('organization_class/index',$data);
         }
     }
 
-    function get_table($ftitle = "fn:",$sort_by = "order_no", $sort_order = "asc", $offset = 0)
+    public function ajax_list()
     {
+        $list = $this->organization_class_model->get_datatables();
+        $data = array();
+        $no = $_POST['start'];
+        foreach ($list as $val) {
+            $no++;
+            $row = array();
+            $row[] = $val->title;
+            $row[] = $val->order_no;
 
-        if (!$this->ion_auth->logged_in())
-        {
-            //redirect them to the login page
-            redirect('auth/login', 'refresh');
-        }
-        elseif (!$this->ion_auth->is_admin()) //remove this elseif if you want to enable this for non-admins
-        {
-            //redirect them to the home page because they must be an administrator to view this
-            //return show_error('You must be an administrator to view this page.');
-            return show_error('You must be an administrator to view this page.');
-        }
-        else
-        {
-            //set the flash data error message if there is one
-            $this->data['message'] = (validation_errors()) ? validation_errors() : $this->session->flashdata('message');
-
-            //set sort order
-            $this->data['sort_order'] = $sort_order;
-            
-            //set sort by
-            $this->data['sort_by'] = $sort_by;
-           
-            //set filter by title
-            $this->data['ftitle_param'] = $ftitle; 
-            $exp_ftitle = explode(":",$ftitle);
-            $ftitle_re = str_replace("_", " ", $exp_ftitle[1]);
-            $ftitle_post = (strlen($ftitle_re) > 0) ? array('organization_class.title'=>$ftitle_re) : array() ;
-            
-            //set default limit in var $config['list_limit'] at application/config/ion_auth.php 
-            $this->data['limit'] = $limit = (strlen($this->input->post('limit')) > 0) ? $this->input->post('limit') : 10 ;
-
-            $this->data['offset'] = $offset = $this->uri->segment(6);
-
-            //list of filterize all organization_class  
-            $this->data['organization_class_all'] = $this->organization_class_model->like($ftitle_post)->where('is_deleted',0)->organization_class()->result();
-
-            $this->data['num_rows_all'] = $this->organization_class_model->like($ftitle_post)->where('is_deleted',0)->organization_class()->num_rows();
-
-            //list of filterize limit organization_class for pagination  
-            $this->data['organization_class'] = $this->organization_class_model->like($ftitle_post)->where('is_deleted',0)->limit($limit)->offset($offset)->order_by($sort_by, $sort_order)->organization_class()->result();
-
-            $this->data['_num_rows'] = $this->organization_class_model->like($ftitle_post)->where('is_deleted',0)->limit($limit)->offset($offset)->order_by($sort_by, $sort_order)->organization_class()->num_rows();
-
-             //config pagination
-             $config['base_url'] = base_url().'organization_class/index/fn:'.$exp_ftitle[1].'/'.$sort_by.'/'.$sort_order.'/';
-             $config['total_rows'] = $this->data['num_rows_all'];
-             $config['per_page'] = $limit;
-             $config['uri_segment'] = $offset = $this->uri->segment(6);
-
-            //inisialisasi config
-             $this->pagination->initialize($config);
-
-            //create pagination
-            $this->data['halaman'] = $this->pagination->create_links();
-
-            $this->data['ftitle_search'] = array(
-                'name'  => 'title',
-                'id'    => 'title',
-                'type'  => 'text',
-                'value' => $this->form_validation->set_value('title'),
-            );
-
-            $this->_render_page('organization_class/table/index', $this->data);
-        }
-    }
-	
-	function get_modal()
-    {
-
-        if (!$this->ion_auth->logged_in())
-        {
-            //redirect them to the login page
-            redirect('auth/login', 'refresh');
-        }
-        elseif (!$this->ion_auth->is_admin()) //remove this elseif if you want to enable this for non-admins
-        {
-            //redirect them to the home page because they must be an administrator to view this
-            //return show_error('You must be an administrator to view this page.');
-            return show_error('You must be an administrator to view this page.');
-        }
-        else
-        {
-			$this->data['organization_class'] = $this->organization_class_model->organization_class()->result();
-
-			$this->load->view('organization_class/modal/index', $this->data);
-		}
-	}
-
-    function keywords(){
-        if (!$this->ion_auth->logged_in())
-        {
-            //redirect them to the login page
-            redirect('auth/login', 'refresh');
-        }
-        elseif (!$this->ion_auth->is_admin()) //remove this elseif if you want to enable this for non-admins
-        {
-            //redirect them to the home page because they must be an administrator to view this
-            //return show_error('You must be an administrator to view this page.');
-            return show_error('You must be an administrator to view this page.');
-        }
-        else
-        {
-            $title = $this->input->post('title');
-            $base = base_url();
-
-            if($title=null){
-                echo json_encode(array('st'=>0));
-            }else{
-                echo json_encode(array('st' =>1, 'title'=>$this->input->post('title'), 'base_url' => $base));
-            }
-        }
-    }
-
-    public function update($id)
-    {
-        $this->form_validation->set_rules('title', lang('title'), 'trim|required');
-        $this->form_validation->set_rules('order_no', lang('order_no'), 'trim|required');
+            //add html for action
+            $row[] = '<a class="btn btn-sm btn-primary btn-mini" href="javascript:void()" title="Edit" onclick="edit_('."'".$val->id."'".')"><i class="icon-edit"></i> Edit</a>
+            <a class="btn btn-sm btn-danger btn-mini" href="javascript:void()" title="Hapus" onclick="delete_('."'".$val->id."'".')"><i class="icon-remove"></i> Delete</a>';
         
-        if($this->form_validation->run() == FALSE)
-        {
-            echo json_encode(array('st'=>0, 'errors'=>validation_errors('<div class="alert alert-danger" role="alert">', '</div>')));
-        }
-        else
-        {         
-            $data = array(
-                    'title'             => $this->input->post('title'),
-                    'order_no'          => $this->input->post('order_no'),
-                    'edited_on'         => date('Y-m-d',strtotime('now')),
-                    'edited_by'         => $this->session->userdata('user_id'),
-                    );
-
-            $this->organization_class_model->update($id, $data);
-
-            echo json_encode(array('st'=>1));
-            
+            $data[] = $row;
         }
 
+        $output = array(
+                        "draw" => $_POST['draw'],
+                        "recordsTotal" => $this->organization_class_model->count_all(),
+                        "recordsFiltered" => $this->organization_class_model->count_filtered(),
+                        "data" => $data,
+                );
+        //output to json format
+        echo json_encode($output);
     }
 
-    public function delete($id)
+    public function ajax_add()
+    {
+        $this->_validate();
+        $data = array(
+                'title' => $this->input->post('title'),
+                'order_no' => $this->input->post('order_no'),
+                'created_on' => date('Y-m-d H:i:s', now()),
+                'created_by' => GetUserID()
+                );
+        $insert = $this->organization_class_model->save($data);
+        echo json_encode(array("status" => TRUE));
+    }
+
+    public function ajax_delete($id)
     {
         $data = array(
-                'is_deleted'    => 1,
-                'deleted_on'    =>date('Y-m-d',strtotime('now')),
-                'deleted_by'    =>$this->session->userdata('user_id'),
-                );
-
-        $this->organization_class_model->update($id, $data);
-
-        echo json_encode(array('st'=>1));
+                'is_deleted' => 1,
+                'deleted_on' => date('Y-m-d H:i:s', now()),
+                'deleted_by' => GetUserID()
+            );
+        $this->organization_class_model->update(array('id' => $id), $data);
+        echo json_encode(array("status" => TRUE));
     }
 
-    public function add()
+    public function ajax_edit($id)
     {
+        $data = $this->organization_class_model->get_by_id($id);
+        echo json_encode($data);
+    }
 
-        $this->form_validation->set_rules('title', 'Title', 'trim|required');
-        
-        if($this->form_validation->run() == FALSE)
-        {
-            echo json_encode(array('st'=>0, 'errors'=>validation_errors('<div class="alert alert-danger" role="alert">', '</div>')));
-        }
-        else
-        {
-           
-            $title    = $this->input->post('title');
-
-            $additional_data = array(
-                'order_no'        => $this->input->post('order_no'),
-                'created_on'        => date('Y-m-d',strtotime('now')),
-                'created_by'        => $this->session->userdata('user_id'),
+    public function ajax_update()
+    {
+        $this->_validate();
+        $data = array(
+                'title' => $this->input->post('title'),
+                'order_no' => $this->input->post('order_no'),
+                'edited_on' => date('Y-m-d H:i:s', now()),
+                'edited_by' => GetUserID()
             );
+        $this->organization_class_model->update(array('id' => $this->input->post('id')), $data);
+        echo json_encode(array("status" => TRUE));
+    }
 
-            if ($this->form_validation->run() == true && $this->organization_class_model->create_($title, $additional_data))
-            {
-                echo json_encode(array('st'=>1));   
-            }else{
-                echo json_encode(array('st'=>0, 'errors'=>validation_errors('<div class="alert alert-danger" role="alert">', '</div>')));
-            }
+    private function _validate()
+    {
+        $data = array();
+        $data['error_string'] = array();
+        $data['inputerror'] = array();
+        $data['status'] = TRUE;
+
+        if($this->input->post('title') == '')
+        {
+            $data['inputerror'][] = 'title';
+            $data['error_string'][] = 'Name is required';
+            $data['status'] = FALSE;
+        }
+
+        if($this->input->post('order_no') == '')
+        {
+            $data['inputerror'][] = 'order_no';
+            $data['error_string'][] = 'Order number is required';
+            $data['status'] = FALSE;
+        }
+
+        if($data['status'] === FALSE)
+        {
+            echo json_encode($data);
+            exit();
         }
     }
 
@@ -300,52 +176,45 @@ class Organization_class extends MX_Controller {
 
     function _render_page($view, $data=null, $render=false)
     {
+
         $data = (empty($data)) ? $this->data : $data;
         if ( ! $render)
         {
             $this->load->library('template');
 
-                if(in_array($view, array('organization_class/index')))
-                {
-                    $this->template->set_layout('default');
+            if (in_array($view, array('organization_class/index')))
+            {
+                $this->template->set_layout('default');
 
-                    $this->template->add_js('jquery.min.js');
-                    $this->template->add_js('bootstrap.min.js');
+                $this->template->add_js('jquery.min.js');
+                $this->template->add_js('bootstrap.min.js');
 
-                    $this->template->add_js('jquery-ui-1.10.1.custom.min.js');
-                    $this->template->add_js('jquery.sidr.min.js');
-                    $this->template->add_js('breakpoints.js');
-                    $this->template->add_js('select2.min.js');
+                $this->template->add_js('jquery-ui-1.10.1.custom.min.js');
+                $this->template->add_js('jquery.sidr.min.js');
+                $this->template->add_js('breakpoints.js');
+                $this->template->add_js('select2.min.js');
 
-                    $this->template->add_js('core.js');
-                    $this->template->add_js('purl.js');
+                $this->template->add_js('core.js');
+                $this->template->add_js('purl.js');
 
-                    $this->template->add_js('main.js');
-                    $this->template->add_js('respond.min.js');
+                $this->template->add_js('main.js');
+                $this->template->add_js('respond.min.js');
 
+                
+                $this->template->add_css('jquery-ui-1.10.1.custom.min.css');
+                $this->template->add_css('plugins/select2/select2.css');
+
+                $this->template->add_css('datatables.min.css');
+                $this->template->add_js('datatables.min.js');
+                
+                $this->template->add_js('organization_class.js');
                     
-                    $this->template->add_css('jquery-ui-1.10.1.custom.min.css');
-                    $this->template->add_css('plugins/select2/select2.css');
-                    
-                }
-                elseif(in_array($view, array('organization_class/edit')))
-                {
+            }
 
-                    $this->template->set_layout('default');
-
-                    $this->template->add_js('jquery-ui-1.10.1.custom.min.js');
-                    $this->template->add_js('jqueryblockui.js');
-                    $this->template->add_js('jquery.sidr.min.js');
-                    $this->template->add_js('breakpoints.js');
-                    $this->template->add_js('pace.min.js');
-                    $this->template->add_js('core.js');
-                    
-                    $this->template->add_js('select2.min.js');
-                    
-                    $this->template->add_css('jquery-ui-1.10.1.custom.min.css');
-                    $this->template->add_css('pace-theme-flash.css');
-                }
-
+            if(in_array($view, array('auth/login')))
+            {
+                $this->template->set_layout('layout_login');    
+            }
 
             if ( ! empty($data['title']))
             {
@@ -359,7 +228,5 @@ class Organization_class extends MX_Controller {
             return $this->load->view($view, $data, TRUE);
         }
     }
-
-    
 
 }
